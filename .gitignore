@@ -1,1 +1,5 @@
-/data
+# Runtime / vector DB files
+rail_db/
+*.sqlite
+*.db
+*.lock
