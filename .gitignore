@@ -1,5 +1,5 @@
-# Runtime / vector DB files
+venv/
+__pycache__/
+*.pdf
 rail_db/
-*.sqlite
-*.db
-*.lock
+*.env
