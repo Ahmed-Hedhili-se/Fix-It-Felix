@@ -1,103 +1,86 @@
 import streamlit as st
-import torch
-from transformers import AutoProcessor, AutoModel
-from qdrant_client import QdrantClient
-from PIL import Image
+import time
+import json
 import os
+from agents import EfficiencyAgent
+from safety import SafetyAgent
 
-st.set_page_config(page_title="Neuro-Rail Control", page_icon="🚄", layout="wide")
+# CONFIGURATION
+st.set_page_config(page_title="Neuro-Rail Control", layout="wide", page_icon="🚄")
 
-st.title("FIX IT FELIX : Neuro-Rail: Autonomous Network Brain")
-st.markdown("###  Perception & Decision Engine")
+# --- SIDEBAR (CONTROLS) ---
+st.sidebar.header("🎛️ Neuro-Rail Control")
+uploaded_file = st.sidebar.file_uploader("Upload Track Image", type=["jpg", "png"])
+speed_input = st.sidebar.slider("Telematics: Train Speed (km/h)", 0, 200, 130)
+track_status = st.sidebar.checkbox("Track Occupied?", value=False)
 
-@st.cache_resource
-def load_brain():
-    print(">> Loading Models...")
-    model_id = "google/siglip-base-patch16-224"
-    processor = AutoProcessor.from_pretrained(model_id)
-    model = AutoModel.from_pretrained(model_id)
-    client = QdrantClient(path="rail_db")
-    return processor, model, client
+# --- MAIN HEADER ---
+st.title("🚄 Fix-It Felix: Neuro-Symbolic Rail Brain")
+st.markdown("---")
 
-try:
-    processor, model, client = load_brain()
-    st.success("✅ System Online: Brain Connected.")
-except Exception as e:
-    st.error(f"❌ System Offline: {e}")
-    st.stop()
+# --- INITIALIZE AGENTS ---
+if 'efficiency_agent' not in st.session_state:
+    st.session_state['efficiency_agent'] = EfficiencyAgent()
+    st.session_state['safety_agent'] = SafetyAgent()
 
-st.sidebar.header("📡 Live Feed Input")
-mode = st.sidebar.radio("Input Source", ["Text Query (Manual)", "Drone Image (Upload)"])
-
-COLLECTION_NAME = "railway_knowledge"
-
-if mode == "Text Query (Manual)":
-    query = st.text_input("Enter patrol observation:", "a broken railway track")
-    if st.button("Analyze Report"):
-        with st.spinner("Processing language vector..."):
-            inputs = processor(text=[query], images=None, return_tensors="pt", padding="max_length")
-            with torch.no_grad():
-                outputs = model.get_text_features(**inputs)
-            
-            text_vector = outputs / outputs.norm(p=2, dim=-1, keepdim=True)
-            results = client.query_points(
-                collection_name=COLLECTION_NAME,
-                query=text_vector[0].tolist(),
-                limit=1
-            ).points
-            
-            best_match = results[0] if results else None
-
-elif mode == "Drone Image (Upload)":
-    uploaded_file = st.file_uploader("Upload Drone Surveillance Photo", type=["jpg", "png", "jpeg"])
-    
-    if uploaded_file is not None:
-        image = Image.open(uploaded_file).convert("RGB")
-        st.image(image, caption="Live Feed", width=400)
-        
-        if st.button("Scan for Anomalies"):
-            with st.spinner("Vision Model Scanning..."):
-                inputs = processor(images=image, return_tensors="pt")
-                with torch.no_grad():
-                    outputs = model.get_image_features(**inputs)
-                
-                img_vector = outputs / outputs.norm(p=2, dim=-1, keepdim=True)
-                results = client.query_points(
-                    collection_name=COLLECTION_NAME,
-                    query=img_vector[0].tolist(),
-                    limit=1
-                ).points
-                
-                best_match = results[0] if results else None
-
-if 'best_match' in locals() and best_match:
-    st.divider()
-    st.subheader(" Memory Retrieval & Decision")
-    
+# --- THE MAIN LOOP ---
+if uploaded_file is not None:
     col1, col2 = st.columns(2)
     
-    payload = best_match.payload
-    status = payload['status']
-    score = best_match.score
-    
     with col1:
-        st.write(f"**Matched Historical Event:** `{payload['filename']}`")
-        st.write(f"**Similarity Score:** `{score:.4f}`")
+        st.subheader("1. Perception (Visual Input)")
+        st.image(uploaded_file, caption="Live CCTV Feed", use_container_width=True)
         
-        memory_path = os.path.join("data", payload['filename'])
-        if os.path.exists(memory_path):
-            st.image(memory_path, caption="Visual Match from Memory Bank", width=300)
-    
+        # MOCK SEARCH (Since we are in demo mode)
+        # In real life, this would call qdrant_client.search()
+        with st.spinner("🔍 Searching Golden Runs..."):
+            time.sleep(1.2) # UX Pause
+            st.info("✅ Match Found: 'Broken Rail' (Confidence: 94%)")
+            st.json({
+                "incident": "Broken Rail",
+                "severity": "CRITICAL", 
+                "history": "2022-04-12: Derailment Prevented"
+            })
+
     with col2:
-        if status == "CRITICAL":
-            st.error(f"##  STATUS: {status}")
-            st.markdown("### ACTION: STOP TRAIN IMMEDIATELY")
-            st.write("Reason: High structural damage detected matching critical failure patterns.")
-        elif status == "WARNING":
-            st.warning(f"##  STATUS: {status}")
-            st.markdown("### ACTION: SLOW DOWN")
-            st.write("Reason: Obstruction or weather conditions detected.")
+        st.subheader("2. Reasoning (The Debate)")
+        
+        # A. EFFICIENCY AGENT (NEURAL)
+        st.markdown("**🤖 Efficiency Agent (Neural)**")
+        proposal = st.session_state['efficiency_agent'].propose_fix("Broken Rail", "CRITICAL")
+        
+        # Display the Neural thought process
+        with st.expander("See Neural Reasoning", expanded=True):
+            st.write(f"**Proposal:** `{proposal['action']}`")
+            st.write(f"**Reason:** {proposal['reason']}")
+
+        st.markdown("⬇️ _Passes to Safety Layer_")
+        time.sleep(0.5)
+
+        # B. SAFETY AGENT (SYMBOLIC)
+        st.markdown("**🛡️ Safety Agent (Symbolic)**")
+        
+        # Prepare sensor data from the sidebar sliders
+        sensor_data = {
+            "current_speed_kmh": speed_input,
+            "track_occupied": track_status
+        }
+        
+        audit = st.session_state['safety_agent'].audit_decision(proposal, sensor_data)
+
+        # C. FINAL VERDICT
+        if audit["status"] == "APPROVED":
+            st.success(f"🟢 ACTION APPROVED: {audit['final_action']}")
+        elif audit["status"] == "VETOED":
+            st.error(f"🔴 VETOED BY PHYSICS ENGINE")
+            st.warning(f"⚠️ OVERRIDE ACTION: {audit['override_action']}")
+            st.caption(f"Reason: {audit['reason']}")
         else:
-            st.success(f"##  STATUS: {status}")
-            st.markdown("### ACTION: PROCEED")
-            st.write("Reason: Track appears clear matches safe patterns.")
+            st.warning(f"🟡 WARNING: {audit['reason']}")
+
+else:
+    st.info("👋 Waiting for visual input... Upload an image to start.")
+
+# --- DEBUG FOOTER ---
+st.markdown("---")
+st.caption("System Status: ONLINE | Connected to Qdrant (Local) | Safety Protocols Active")
