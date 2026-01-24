@@ -33,7 +33,7 @@ if not images:
     print("   [ERROR] No images found in ./data folder! Please add some.")
     exit()
 
-print(f">> 👁️  Found {len(images)} images. Processing...")
+print(f">>   Found {len(images)} images. Processing...")
 
 points_to_upload = []
 
