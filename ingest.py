@@ -7,16 +7,16 @@ from qdrant_client.models import Distance, VectorParams, PointStruct
 
 DATA_FOLDER = "./data"
 COLLECTION_NAME = "railway_knowledge"
-MODEL_ID = "google/siglip-base-patch16-224"
+MODEL_ID = "google/siglip2-base-patch16-224"
 
-print(">>  Starting: The Perception Layer...")
+print("Starting: The Perception Layer...")
 
-print(f">> 📥 Loading SigLIP model: {MODEL_ID}...")
+print(f"Loading SigLIP model: {MODEL_ID}...")
 processor = AutoProcessor.from_pretrained(MODEL_ID)
 model = AutoModel.from_pretrained(MODEL_ID)
 print("   [OK] Model Loaded.")
 
-print(">> 💾 Connecting to Local Storage...")
+print("Connecting to Local Storage...")
 client = QdrantClient(path="rail_db") 
 
 if not client.collection_exists(COLLECTION_NAME):
@@ -33,7 +33,7 @@ if not images:
     print("   [ERROR] No images found in ./data folder! Please add some.")
     exit()
 
-print(f">>   Found {len(images)} images. Processing...")
+print(f"Found {len(images)} images. Processing...")
 
 points_to_upload = []
 
@@ -67,7 +67,7 @@ for idx, img_file in enumerate(images):
         print(f"   [!] Failed to process {img_file}: {e}")
 
 if points_to_upload:
-    print(">> Uploading memories to Qdrant...")
+    print("Uploading memories to Qdrant...")
     client.upsert(
         collection_name=COLLECTION_NAME,
         points=points_to_upload

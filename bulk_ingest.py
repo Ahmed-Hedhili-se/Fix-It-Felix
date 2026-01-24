@@ -7,7 +7,7 @@ from qdrant_client.models import PointStruct
 
 DATASET_PATH = "data"        
 COLLECTION_NAME = "rail_lines" 
-MODEL_ID = "google/siglip-base-patch16-224"
+MODEL_ID = "google/siglip2-base-patch16-224"
 
 print("Starting: Bulk Perception Layer...")
 

@@ -5,3 +5,4 @@ transformers
 pillow
 streamlit
 numpy
+ultralytics
