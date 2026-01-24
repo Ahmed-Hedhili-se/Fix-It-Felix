@@ -67,7 +67,7 @@ for idx, img_file in enumerate(images):
         print(f"   [!] Failed to process {img_file}: {e}")
 
 if points_to_upload:
-    print(">> 🧠 Uploading memories to Qdrant...")
+    print(">> Uploading memories to Qdrant...")
     client.upsert(
         collection_name=COLLECTION_NAME,
         points=points_to_upload
