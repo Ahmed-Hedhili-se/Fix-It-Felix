@@ -9,7 +9,7 @@ DATA_FOLDER = "./data"
 COLLECTION_NAME = "railway_knowledge"
 MODEL_ID = "google/siglip-base-patch16-224"
 
-print(">> 🚀 Starting: The Perception Layer...")
+print(">>  Starting: The Perception Layer...")
 
 print(f">> 📥 Loading SigLIP model: {MODEL_ID}...")
 processor = AutoProcessor.from_pretrained(MODEL_ID)
