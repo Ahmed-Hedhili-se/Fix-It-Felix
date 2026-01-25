@@ -6,7 +6,7 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct
 
 DATA_FOLDER = "./data"
-COLLECTION_NAME = "railway_knowledge"
+COLLECTION_NAME = "rail_safety_logs"
 MODEL_ID = "google/siglip2-base-patch16-224"
 
 print("Starting: The Perception Layer...")
@@ -17,16 +17,10 @@ model = AutoModel.from_pretrained(MODEL_ID)
 print("   [OK] Model Loaded.")
 
 print("Connecting to Local Storage...")
-client = QdrantClient(path="rail_db") 
+client = QdrantClient(path="qdrant_db") 
 
-if not client.collection_exists(COLLECTION_NAME):
-    client.create_collection(
-        collection_name=COLLECTION_NAME,
-        vectors_config=VectorParams(size=768, distance=Distance.COSINE),
-    )
-    print(f"   [OK] Created collection '{COLLECTION_NAME}'")
-else:
-    print(f"   [OK] Collection '{COLLECTION_NAME}' found.")
+# NOTE: Collection creation should be handled by MemorySystem or validated here.
+# We assume it exists or has compatible schema.
 
 images = [f for f in os.listdir(DATA_FOLDER) if f.endswith(('.jpg', '.jpeg', '.png'))]
 if not images:
@@ -59,7 +53,7 @@ for idx, img_file in enumerate(images):
         }
 
         points_to_upload.append(
-            PointStruct(id=idx+1, vector=vector_list, payload=payload)
+            PointStruct(id=idx+1, vector={"offline_lane": vector_list}, payload=payload)
         )
         print(f"   [+] Processed: {img_file} -> Status: {status}")
 

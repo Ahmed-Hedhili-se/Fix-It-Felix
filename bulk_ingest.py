@@ -6,7 +6,7 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import PointStruct
 
 DATASET_PATH = "data"        
-COLLECTION_NAME = "rail_lines" 
+COLLECTION_NAME = "rail_safety_logs" 
 MODEL_ID = "google/siglip2-base-patch16-224"
 
 print("Starting: Bulk Perception Layer...")
@@ -16,7 +16,7 @@ processor = AutoProcessor.from_pretrained(MODEL_ID)
 model = AutoModel.from_pretrained(MODEL_ID)
 print("   [OK] Model Loaded.")
 
-client = QdrantClient(path="rail_db")
+client = QdrantClient(path="qdrant_db")
 print(f"Connected to '{COLLECTION_NAME}'.")
 
 def get_embedding(image_path):
@@ -68,7 +68,7 @@ for root, dirs, files in os.walk(DATASET_PATH):
                 
                 points_batch.append(PointStruct(
                     id=total_counter, 
-                    vector=vector, 
+                    vector={"offline_lane": vector}, 
                     payload=payload
                 ))
                 

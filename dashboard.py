@@ -1,74 +1,127 @@
 import streamlit as st
-import time
-import json
 import os
+import uuid
+from PIL import Image
+import tempfile
 
-from src.agents import EfficiencyAgent
-from src.safety import SafetyAgent
+# --- IMPORT YOUR ARCHITECTURE ---
+from src.memory import MemorySystem
+from src.strategies.cloud import CloudMatryoshkaStrategy
+from src.strategies.local import PrivateStrategy, OfflineStrategy
 
-st.set_page_config(page_title="Neuro-Rail Control", layout="wide")
+# --- PAGE CONFIG ---
+st.set_page_config(page_title="Fix-It Felix: Multi-Modal Engine", layout="wide")
 
-st.sidebar.header("Neuro-Rail Control")
-uploaded_file = st.sidebar.file_uploader("Upload Track Image", type=["jpg", "png"])
-speed_input = st.sidebar.slider("Telematics: Train Speed (km/h)", 0, 200, 130)
-track_status = st.sidebar.checkbox("Track Occupied?", value=False)
+# --- INITIALIZE BACKEND (TIERS 3 & 4) ---
+@st.cache_resource
+def load_memory():
+    return MemorySystem(path="qdrant_db")
 
-st.title("Fix-It Felix: Neuro-Symbolic Rail Brain")
+@st.cache_resource
+def load_strategies():
+    return {
+        1: CloudMatryoshkaStrategy(), # Tier 1: Cloud Matryoshka
+        3: PrivateStrategy(),         # Tier 3: Local YOLO + Slicing
+        4: OfflineStrategy()          # Tier 4: Local YOLO + Binary
+    }
+
+memory = load_memory()
+strategies = load_strategies()
+
+# --- SIDEBAR: MODE SELECTION (TIER 1) ---
+st.sidebar.title("⚙️ Engine Mode")
+mode_selection = st.sidebar.radio(
+    "Select Processing Pipeline:",
+    options=[1, 3, 4],
+    format_func=lambda x: {
+        1: "1. Cloud Matryoshka (GPT-4o + 256-dim)",
+        3: "3. Private/Secure (Local | Privacy)",
+        4: "4. Offline/Edge (Local | No Internet)"
+    }[x]
+)
+
+st.sidebar.info(f"**Current Strategy:**\n{strategies[mode_selection].__class__.__name__}")
+
+# --- MAIN INTERFACE ---
+st.title("🔧 Fix-It Felix: Diagnostics Dashboard")
 st.markdown("---")
 
-if 'efficiency_agent' not in st.session_state:
-    st.session_state['efficiency_agent'] = EfficiencyAgent()
-    st.session_state['safety_agent'] = SafetyAgent()
+uploaded_file = st.file_uploader("Upload Image for Analysis", type=["jpg", "png", "jpeg"])
 
 if uploaded_file is not None:
-    col1, col2 = st.columns(2)
-    
+    # 1. Show Image
+    col1, col2 = st.columns([1, 1])
     with col1:
-        st.subheader("1. Perception (Visual Input)")
-        st.image(uploaded_file, caption="Live CCTV Feed", use_container_width=True)
-        
-        with st.spinner("Searching Golden Runs..."):
-            time.sleep(1.2)
-            st.info("Match Found: 'Broken Rail' (Confidence: 94%)")
-            st.json({
-                "incident": "Broken Rail",
-                "severity": "CRITICAL", 
-                "history": "2022-04-12: Derailment Prevented"
-            })
+        image = Image.open(uploaded_file)
+        st.image(image, caption="Input Data", use_column_width=True)
+    
+    # 2. Save Temp File (Strategies need a path)
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp_file:
+        image.save(tmp_file.name)
+        tmp_path = tmp_file.name
 
+    # 3. Process Button
     with col2:
-        st.subheader("2. Reasoning (The Debate)")
-        
-        st.markdown("**Efficiency Agent (Neural)**")
-        proposal = st.session_state['efficiency_agent'].propose_fix("Broken Rail", "CRITICAL")
-        
-        with st.expander("See Neural Reasoning", expanded=True):
-            st.write(f"**Proposal:** `{proposal['action']}`")
-            st.write(f"**Reason:** {proposal['reason']}")
+        st.subheader("Analysis Results")
+        if st.button("🚀 Run Analysis Engine", type="primary"):
+            
+            with st.spinner("Processing through Tier 1-4..."):
+                try:
+                    # Generate ID
+                    incident_id = str(uuid.uuid4())
+                    
+                    # --- EXECUTE STRATEGY (Tier 3) ---
+                    engine = strategies[mode_selection]
+                    result = engine.process(tmp_path, incident_id)
+                    
+                    # Display Raw Result
+                    st.success("Processing Complete!")
+                    st.json(result)
 
-        st.markdown("Passes to Safety Layer")
-        time.sleep(0.5)
+                    # --- EXTRACT DATA FOR DB ---
+                    # Note: Cloud strategy saves to DB internally. Local strategies return data.
+                    # We only need to manually save for Local modes if they don't do it themselves.
+                    # Looking at code: CloudMatryoshkaStrategy saves to DB. 
+                    # PrivateStrategy/OfflineStrategy do NOT save to DB in process().
+                    
+                    # --- EXTRACT DATA FOR DB ---
+                    log_text = result.get("analysis") or str(result.get("detections"))
+                    
+                    # Get the vector (Full or Sliced)
+                    vector_data = result.get("vector_full", result.get("vector_preview", [0.0]*768))
+                    
+                    # --- SAVE TO MEMORY (All modes now handled centrally) ---
+                    st.info(f"Saving to Neuro-Rail Memory (Mode {mode_selection})...")
+                    
+                    memory.save_incident(
+                        vector=vector_data,
+                        mode=mode_selection,
+                        payload={
+                            "id": incident_id,
+                            "mode": result.get("mode"),
+                            "source": "dashboard_upload",
+                            "analysis": log_text
+                        }
+                    )
+                    st.toast("✅ Saved to Qdrant Database!", icon="💾")
 
-        st.markdown("**Safety Agent (Symbolic)**")
-        
-        sensor_data = {
-            "current_speed_kmh": speed_input,
-            "track_occupied": track_status
-        }
-        
-        audit = st.session_state['safety_agent'].audit_decision(proposal, sensor_data)
+                except Exception as e:
+                    st.error(f"Pipeline Error: {e}")
+                finally:
+                    # Cleanup temp file
+                    if os.path.exists(tmp_path):
+                        os.remove(tmp_path)
 
-        if audit["status"] == "APPROVED":
-            st.success(f"ACTION APPROVED: {audit['final_action']}")
-        elif audit["status"] == "VETOED":
-            st.error(f"VETOED BY PHYSICS ENGINE")
-            st.warning(f"OVERRIDE ACTION: {audit['override_action']}")
-            st.caption(f"Reason: {audit['reason']}")
-        else:
-            st.warning(f"WARNING: {audit['reason']}")
-
-else:
-    st.info("Waiting for visual input... Upload an image to start.")
-
+# --- MEMORY INSPECTOR (OPTIONAL) ---
 st.markdown("---")
-st.caption("System Status: ONLINE | Connected to Qdrant (Local) | Safety Protocols Active")
+with st.expander("🔍 Inspect Database Memory"):
+    st.write("Recent Logs (Raw Check):")
+    # Since we can't search by text easily without embedding model, 
+    # we'll just check if we can retrieve points or verify connection.
+    try:
+        # Just show info about collection
+        info = memory.client.get_collection(memory.collection)
+        st.write(f"Collection '{memory.collection}' Status: {info.status}")
+        st.write(f"Vectors Count: {info.points_count}")
+    except Exception as e:
+        st.warning(f"Could not fetch memory stats: {e}")

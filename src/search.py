@@ -1,10 +1,10 @@
 from qdrant_client import QdrantClient
 
-COLLECTION_NAME = "rail_lines"
+COLLECTION_NAME = "rail_safety_logs"
 
 class MemoryBank:
     def __init__(self):
-        self.client = QdrantClient(path="rail_db")
+        self.client = QdrantClient(path="qdrant_db")
         print("Memory Bank (Qdrant): Connected.")
 
     def search_by_vector(self, vector):

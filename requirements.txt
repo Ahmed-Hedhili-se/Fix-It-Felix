@@ -6,3 +6,5 @@ pillow
 streamlit
 numpy
 ultralytics
+python-dotenv
+openai
