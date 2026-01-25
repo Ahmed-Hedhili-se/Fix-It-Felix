@@ -2,14 +2,18 @@ import os
 import shutil
 import glob
 import random
+
 SOURCE_DIRS = [
-    ,
+    "datasets/training_vision/rail_5k",
+    "datasets/training_vision/Railway Track fault Detection Updated"
 ]
+
 BASE_DIR = "datasets/training_vision"
 IMG_TRAIN = os.path.join(BASE_DIR, "images/train")
 IMG_VAL = os.path.join(BASE_DIR, "images/val")
 LBL_TRAIN = os.path.join(BASE_DIR, "labels/train")
 LBL_VAL = os.path.join(BASE_DIR, "labels/val")
+
 def organize_data():
     for d in [IMG_TRAIN, IMG_VAL, LBL_TRAIN, LBL_VAL]:
         os.makedirs(d, exist_ok=True)
@@ -17,7 +21,11 @@ def organize_data():
     all_images = []
     for source in SOURCE_DIRS:
         if os.path.exists(source):
-            found = glob.glob(os.path.join(source, "**", "*.jpg"), recursive=True) +                    glob.glob(os.path.join(source, "**", "*.png"), recursive=True) +                    glob.glob(os.path.join(source, "**", "*.jpeg"), recursive=True)
+            found = (
+                glob.glob(os.path.join(source, "**", "*.jpg"), recursive=True) +
+                glob.glob(os.path.join(source, "**", "*.png"), recursive=True) +
+                glob.glob(os.path.join(source, "**", "*.jpeg"), recursive=True)
+            )
             all_images.extend(found)
             print(f"   Found {len(found)} images in '{os.path.basename(source)}'")
         else:
@@ -47,5 +55,6 @@ def organize_data():
     v_count = move_files(val_imgs, IMG_VAL, LBL_VAL)
     print(f" Success! Organized {t_count + v_count} images.")
     print(" Your data is now ready for 1_train_yolo.py")
+
 if __name__ == "__main__":
     organize_data()
