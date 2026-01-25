@@ -21,12 +21,12 @@ class PrivateStrategy(InferenceStrategy):
         fake_local_vector = np.random.rand(768).tolist()
         optimized_vector = fake_local_vector[:128]
         return {
-            : "3-PrivateLocal",
-            : "Local CPU/GPU (YOLO)",
-            : "Secure (No data left device)",
-            : list(set(detections)), 
-            : optimized_vector[:5],
-            : optimized_vector 
+            "mode": "3-PrivateLocal",
+            "source": "Local CPU/GPU (YOLO)",
+            "privacy": "Secure (No data left device)",
+            "detections": list(set(detections)), 
+            "vector_preview": optimized_vector[:5],
+            "vector_full": optimized_vector 
         }
 class OfflineStrategy(InferenceStrategy):
     def process(self, image_path: str, incident_id: str):
@@ -37,9 +37,9 @@ class OfflineStrategy(InferenceStrategy):
         fake_local_vector = np.random.randn(768).tolist() 
         binary_vector = to_binary(fake_local_vector)
         return {
-            : "4-OfflineBinary",
-            : "Local (Offline)",
-            : "Binary (1s and 0s)",
-            : list(set(detections)),
-            : binary_vector[:10] 
+            "mode": "4-OfflineBinary",
+            "source": "Local (Offline)",
+            "storage_type": "Binary (1s and 0s)",
+            "detections": list(set(detections)),
+            "vector_preview": binary_vector[:10] 
         }

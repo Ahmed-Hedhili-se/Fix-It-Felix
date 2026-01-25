@@ -31,9 +31,9 @@ for idx, img_file in enumerate(images):
         vector_list = image_vector[0].tolist()
         status = "CRITICAL" if "broken" in img_file else ("WARNING" if "snow" in img_file else "OK")
         payload = {
-            : img_file,
-            : status,
-            : "STOP_TRAIN" if status == "CRITICAL" else "MONITOR"
+            "filename": img_file,
+            "status": status,
+            "recommended_action": "STOP_TRAIN" if status == "CRITICAL" else "MONITOR"
         }
         points_to_upload.append(
             PointStruct(id=idx+1, vector={"offline_lane": vector_list}, payload=payload)

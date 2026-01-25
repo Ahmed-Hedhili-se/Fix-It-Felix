@@ -8,9 +8,9 @@ def simulate_test():
     fake_siglip_vector /= np.linalg.norm(fake_siglip_vector)
     incident_id = str(uuid.uuid4())
     payload = {
-        : incident_id,
-        : "Simulated Rail Test",
-        : "offline"
+        "id": incident_id,
+        "status": "Simulated Rail Test",
+        "mode": "offline"
     }
     print(f" Saving 768-dim vector to 'offline_lane'...")
     memory.save_incident(fake_siglip_vector.tolist(), mode=3, payload=payload)

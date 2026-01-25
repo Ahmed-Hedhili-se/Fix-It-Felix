@@ -27,12 +27,12 @@ class CloudMatryoshkaStrategy(InferenceStrategy):
         response = ai_client.chat.completions.create(
             messages=[
                 {
-                    : "system", 
-                    : "You are the Fix-It Felix Antigravity Engine. Analyze rail images. Output technical JSON. Use dense keywords (e.g., 'fissure', 'spalling') at the start of your summary for 256-dim Matryoshka optimization."
+                    "role": "system", 
+                    "content": "You are the Fix-It Felix Antigravity Engine. Analyze rail images. Output technical JSON. Use dense keywords (e.g., 'fissure', 'spalling') at the start of your summary for 256-dim Matryoshka optimization."
                 },
                 {
-                    : "user",
-                    : [
+                    "role": "user",
+                    "content": [
                         {"type": "text", "text": "Analyze this rail segment:"},
                         {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{encoded_image}"}}
                     ]
@@ -50,9 +50,9 @@ class CloudMatryoshkaStrategy(InferenceStrategy):
         original_vector = emb_response.data[0].embedding
         mrl_vector = matryoshka_slice(original_vector, target_dim=256)
         return {
-            : "Cloud Matryoshka (256)",
-            : mrl_vector[:5],
-            : mrl_vector,   
-            : analysis_json,   
-            : "Processed (Waiting for Save)"
+            "mode": "Cloud Matryoshka (256)",
+            "vector_preview": mrl_vector[:5],
+            "vector_full": mrl_vector,   
+            "analysis": analysis_json,   
+            "status": "Processed (Waiting for Save)"
         }

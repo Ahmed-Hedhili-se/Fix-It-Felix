@@ -47,10 +47,10 @@ for root, dirs, files in os.walk(DATASET_PATH):
             if vector:
                 status, action = determine_metadata(file, folder_name)
                 payload = {
-                    : file,
-                    : folder_name,
-                    : status,
-                    : action
+                    "filename": file,
+                    "folder": folder_name,
+                    "status": status,
+                    "recommended_action": action
                 }
                 points_batch.append(PointStruct(
                     id=total_counter, 

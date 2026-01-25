@@ -21,7 +21,7 @@ memory = load_memory()
 strategies = load_strategies()
 st.sidebar.title(" Engine Mode")
 mode_selection = st.sidebar.radio(
-    ,
+    "Select Processing Pipeline:",
     options=[1, 3, 4],
     format_func=lambda x: {
         1: "1. Cloud Matryoshka (GPT-4o + 256-dim)",
@@ -58,10 +58,10 @@ if uploaded_file is not None:
                         vector=vector_data,
                         mode=mode_selection,
                         payload={
-                            : incident_id,
-                            : result.get("mode"),
-                            : "dashboard_upload",
-                            : log_text
+                            "id": incident_id,
+                            "mode": result.get("mode"),
+                            "source": "dashboard_upload",
+                            "analysis": log_text
                         }
                     )
                     st.toast(" Saved to Qdrant Database!", icon="")

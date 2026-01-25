@@ -15,12 +15,12 @@ def process_form_54(file_path):
         cleaned_data = []
         for _, row in dangerous.head(50).iterrows():
             cleaned_data.append({
-                : f"FRA-MECH-{row.get('INCDTNO', 'UNK')}",
-                : "Broken Rail" if row.get('CAUSE') == 'T202' else "Track Defect",
-                : str(row.get('NARR1', 'Mechanical failure detected on track geometry.')).strip(),
-                : "CRITICAL",
-                : "EMERGENCY_STOP",
-                : "Historical Event: Section repaired."
+                "id": f"FRA-MECH-{row.get('INCDTNO', 'UNK')}",
+                "type": "Broken Rail" if row.get('CAUSE') == 'T202' else "Track Defect",
+                "visual_description": str(row.get('NARR1', 'Mechanical failure detected on track geometry.')).strip(),
+                "severity": "CRITICAL",
+                "action_taken": "EMERGENCY_STOP",
+                "outcome": "Historical Event: Section repaired."
             })
         return cleaned_data
     except Exception as e:
@@ -37,12 +37,12 @@ def process_form_57(file_path):
         cleaned_data = []
         for _, row in crashes.head(50).iterrows():
             cleaned_data.append({
-                : f"FRA-CROSS-{row.get('INCDTNO', 'UNK')}",
-                : "Vehicle Collision",
-                : str(row.get('NARR1', 'Vehicle obstructed grade crossing.')).strip(),
-                : "CRITICAL",
-                : "EMERGENCY_BRAKE",
-                : "Collision recorded. Crossing inspected."
+                "id": f"FRA-CROSS-{row.get('INCDTNO', 'UNK')}",
+                "type": "Vehicle Collision",
+                "visual_description": str(row.get('NARR1', 'Vehicle obstructed grade crossing.')).strip(),
+                "severity": "CRITICAL",
+                "action_taken": "EMERGENCY_BRAKE",
+                "outcome": "Collision recorded. Crossing inspected."
             })
         return cleaned_data
     except Exception as e:

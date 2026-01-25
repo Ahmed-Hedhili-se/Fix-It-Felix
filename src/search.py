@@ -13,10 +13,10 @@ class MemoryBank:
         if results:
             best = results[0]
             return {
-                : True,
-                : best.payload['filename'],
-                : best.payload['status'],
-                : best.score
+                "found": True,
+                "filename": best.payload['filename'],
+                "status": best.payload['status'],
+                "score": best.score
             }
         else:
             return {"found": False}

@@ -9,9 +9,9 @@ class RailAgent:
         is_defect, vision_msg = self.vision.analyze_image(image_path)
         if not is_defect:
             return {
-                : "SAFE",
-                : "Continue Normal Operations",
-                : "Vision system confirmed track is clear."
+                "status": "SAFE",
+                "action": "Continue Normal Operations",
+                "reason": "Vision system confirmed track is clear."
             }
         relevant_case = self.memory.search_similar(vision_msg)
         if relevant_case:
@@ -19,7 +19,7 @@ class RailAgent:
         else:
             thought = "New type of anomaly detected. No exact match in database."
         return {
-            : "DANGER",
-            : " EMERGENCY STOP & DISPATCH CREW",
-            : f"{vision_msg}. Context: {thought}"
+            "status": "DANGER",
+            "action": " EMERGENCY STOP & DISPATCH CREW",
+            "reason": f"{vision_msg}. Context: {thought}"
         }

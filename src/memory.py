@@ -8,8 +8,8 @@ class MemorySystem:
             self.client.create_collection(
                 collection_name=self.collection,
                 vectors_config={
-                    : models.VectorParams(size=1536, distance=models.Distance.COSINE),
-                    : models.VectorParams(size=768, distance=models.Distance.COSINE),
+                    "fast_lane": models.VectorParams(size=1536, distance=models.Distance.COSINE),
+                    "offline_lane": models.VectorParams(size=768, distance=models.Distance.COSINE),
                 }
             )
             print(f" Collection '{self.collection}' created successfully.")
