@@ -8,3 +8,6 @@ numpy
 ultralytics
 python-dotenv
 openai
+pandas
+openpyxl
+pypdf

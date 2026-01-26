@@ -1,4 +1,10 @@
 import numpy as np
+import os
+import sys
+
+# Ajouter le dossier parent au système pour trouver le dossier 'src'
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from src.memory import MemorySystem  
 import uuid
 def simulate_test():

@@ -1,9 +1,11 @@
 venv/
 __pycache__/
 *.pdf
-rail_db/
+runs/
+
 qdrant_db/
 data/
 datasets/
+.env
 *.env
 *.pt

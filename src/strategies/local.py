@@ -27,7 +27,7 @@ class PrivateStrategy(InferenceStrategy):
             "detections": list(set(detections)), 
             "vector_preview": optimized_vector[:5],
             "vector_full": optimized_vector 
-        }
+        } 
 class OfflineStrategy(InferenceStrategy):
     def process(self, image_path: str, incident_id: str):
         if not model:

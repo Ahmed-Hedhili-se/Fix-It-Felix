@@ -37,7 +37,7 @@ if uploaded_file is not None:
     col1, col2 = st.columns([1, 1])
     with col1:
         image = Image.open(uploaded_file)
-        st.image(image, caption="Input Data", use_column_width=True)
+        st.image(image, caption="Données d'entrée", use_container_width=True)
     with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp_file:
         image.save(tmp_file.name)
         tmp_path = tmp_file.name
@@ -49,11 +49,38 @@ if uploaded_file is not None:
                     incident_id = str(uuid.uuid4())
                     engine = strategies[mode_selection]
                     result = engine.process(tmp_path, incident_id)
-                    st.success("Processing Complete!")
-                    st.json(result)
+                    st.success("Analyse de l'image terminée !")
                     log_text = result.get("analysis") or str(result.get("detections"))
                     vector_data = result.get("vector_full", result.get("vector_preview", [0.0]*768))
-                    st.info(f"Saving to Neuro-Rail Memory (Mode {mode_selection})...")
+                    
+                    # --- NOUVEAU : RECHERCHE MULTIMODALE (Image + Docs) ---
+                    st.markdown("### 🔍 Expertise Multimodale (Image + Documents)")
+                    ref_case = memory.get_reference_case(vector_data, mode_selection)
+                    
+                    if ref_case and ref_case["score"] > 0.7:
+                        col_a, col_b = st.columns(2)
+                        with col_a:
+                            st.metric("Similarité Image", f"{ref_case['score']:.2%}")
+                            st.write(f"**Archive détectée :** {ref_case['file_ref']}")
+                        with col_b:
+                            st.warning(f"**Solution Issue des Rapports :**\n{ref_case['solution']}")
+                        
+                        with st.expander("📜 Règlements & Documents associés"):
+                            st.info(ref_case["rules"])
+                            if ref_case.get("all_rules"):
+                                for i, r in enumerate(ref_case["all_rules"][1:]):
+                                    st.write(f"--- Document lié {i+2} ---")
+                                    st.write(r)
+                        st.divider()
+                    else:
+                        st.info("Aucun cas de référence exact trouvé. Analyse autonome uniquement.")
+
+                    # Affichage du JSON d'analyse actuelle
+                    with st.expander("Détails techniques de l'analyse"):
+                        st.json(result)
+                    
+                    # Sauvegarde (Optionnelle ou automatique)
+                    st.info(f"Enregistrement de cet incident dans la mémoire (Mode {mode_selection})...")
                     memory.save_incident(
                         vector=vector_data,
                         mode=mode_selection,
@@ -64,7 +91,7 @@ if uploaded_file is not None:
                             "analysis": log_text
                         }
                     )
-                    st.toast(" Saved to Qdrant Database!", icon="")
+                    st.toast("ID d'incident archivé !", icon="💾")
                 except Exception as e:
                     st.error(f"Pipeline Error: {e}")
                 finally:

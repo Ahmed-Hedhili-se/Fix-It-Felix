@@ -1,69 +1,177 @@
 import os
+import json
+import pandas as pd
 from PIL import Image
 import torch
 from transformers import AutoProcessor, AutoModel
 from qdrant_client import QdrantClient
-from qdrant_client.models import PointStruct
-DATASET_PATH = "data"        
-COLLECTION_NAME = "rail_safety_logs" 
-MODEL_ID = "google/siglip2-base-patch16-224"
-print("Starting: Bulk Perception Layer...")
-print(f"Loading SigLIP model: {MODEL_ID}...")
-processor = AutoProcessor.from_pretrained(MODEL_ID)
-model = AutoModel.from_pretrained(MODEL_ID)
-print("   [OK] Model Loaded.")
+from qdrant_client.models import PointStruct, VectorParams, Distance
+from pypdf import PdfReader
+from fastembed import TextEmbedding
+
+# Configuration
+DATASET_PATH = "datasets"
+COLLECTION_IMAGES = "rail_safety_logs"
+COLLECTION_KNOWLEDGE = "expert_knowledge"
+MODEL_IMAGES = "google/siglip2-base-patch16-224"
+MODEL_TEXT = "BAAI/bge-small-en-v1.5"
+
+print("🚀 Starting: Multimodal Ingestion Engine...")
+
 client = QdrantClient(path="qdrant_db")
-print(f"Connected to '{COLLECTION_NAME}'.")
-def get_embedding(image_path):
+
+# 1. SETUP COLLECTIONS
+def setup_collections():
+    # Collection Images
+    if not client.collection_exists(COLLECTION_IMAGES):
+        client.create_collection(
+            collection_name=COLLECTION_IMAGES,
+            vectors_config={
+                "fast_lane": VectorParams(size=1536, distance=Distance.COSINE),
+                "offline_lane": VectorParams(size=768, distance=Distance.COSINE)
+            }
+        )
+        print(f"✅ Collection '{COLLECTION_IMAGES}' ready.")
+
+    # Collection Expert Knowledge (Text)
+    if not client.collection_exists(COLLECTION_KNOWLEDGE):
+        client.create_collection(
+            collection_name=COLLECTION_KNOWLEDGE,
+            vectors_config={
+                "text_vector": VectorParams(size=384, distance=Distance.COSINE)
+            }
+        )
+        print(f"✅ Collection '{COLLECTION_KNOWLEDGE}' ready.")
+
+setup_collections()
+
+# 2. LOAD MODELS
+print(f"📦 Loading SigLIP (Images): {MODEL_IMAGES}...")
+processor = AutoProcessor.from_pretrained(MODEL_IMAGES)
+model_img = AutoModel.from_pretrained(MODEL_IMAGES)
+
+print(f"📦 Loading FastEmbed (Text)...")
+text_model = TextEmbedding(model_name=MODEL_TEXT)
+
+# 3. PROCESSING FUNCTIONS
+def get_image_embedding(image_path):
     try:
         image = Image.open(image_path).convert("RGB")
         inputs = processor(images=image, return_tensors="pt")
         with torch.no_grad():
-            outputs = model.get_image_features(**inputs)
+            outputs = model_img.get_image_features(**inputs)
         image_vector = outputs / outputs.norm(p=2, dim=-1, keepdim=True)
         return image_vector[0].tolist()
     except Exception as e:
-        print(f"   [!] Error reading {image_path}: {e}")
+        print(f"   [!] Error image {image_path}: {e}")
         return None
-def determine_metadata(filename, folder_name):
-    lower_name = (filename + folder_name).lower()
-    if "broken" in lower_name or "crack" in lower_name:
-        return "CRITICAL", "STOP_TRAIN"
-    elif "snow" in lower_name or "ice" in lower_name:
-        return "WARNING", "SLOW_DOWN"
-    elif "obstruction" in lower_name:
-        return "CRITICAL", "EMERGENCY_BRAKE"
-    else:
-        return "OK", "PROCEED"
-points_batch = []
-total_counter = 0
-print(f"Scanning folder: {DATASET_PATH}...")
-for root, dirs, files in os.walk(DATASET_PATH):
-    for file in files:
-        if file.lower().endswith(('.jpg', '.jpeg', '.png')):
-            file_path = os.path.join(root, file)
-            folder_name = os.path.basename(root)
-            vector = get_embedding(file_path)
-            if vector:
-                status, action = determine_metadata(file, folder_name)
-                payload = {
-                    "filename": file,
-                    "folder": folder_name,
-                    "status": status,
-                    "recommended_action": action
-                }
-                points_batch.append(PointStruct(
-                    id=total_counter, 
-                    vector={"offline_lane": vector}, 
-                    payload=payload
-                ))
-                print(f"   [+] Processed: {file} ({status})")
-                total_counter += 1
-            if len(points_batch) >= 50:
-                client.upsert(collection_name=COLLECTION_NAME, points=points_batch)
-                points_batch = []
-                print("Batch saved to Qdrant.")
-if points_batch:
-    client.upsert(collection_name=COLLECTION_NAME, points=points_batch)
-    print("Final batch saved.")
-print(f"\nDONE! Ingested {total_counter} images into the optimized brain.")
+
+def ingest_images():
+    print(f"🖼️  Scanning for images in {DATASET_PATH}...")
+    count = 0
+    points = []
+    for root, _, files in os.walk(DATASET_PATH):
+        for file in files:
+            if file.lower().endswith(('.jpg', '.jpeg', '.png', '.webp')):
+                path = os.path.join(root, file)
+                vector = get_image_embedding(path)
+                if vector:
+                    # Logic simple pour determiner le status
+                    lower_name = (file + root).lower()
+                    status = "OK"
+                    action = "PROCEED"
+                    if "broken" in lower_name or "crack" in lower_name:
+                        status, action = "CRITICAL", "STOP_TRAIN"
+                    elif "snow" in lower_name:
+                        status, action = "WARNING", "SLOW_DOWN"
+
+                    payload = {
+                        "filename": file, 
+                        "source": "image_dataset", 
+                        "path": path,
+                        "status": status,
+                        "recommended_action": action
+                    }
+                    points.append(PointStruct(id=count, vector={"offline_lane": vector}, payload=payload))
+                    count += 1
+                if len(points) >= 50:
+                    client.upsert(COLLECTION_IMAGES, points)
+                    points = []
+    if points: client.upsert(COLLECTION_IMAGES, points)
+    print(f"✅ {count} images ingested.")
+
+def ingest_documents():
+    print(f"📄 Scanning for documents in {DATASET_PATH}...")
+    knowledge_points = []
+    global_id = 10000
+
+    for root, _, files in os.walk(DATASET_PATH):
+        for file in files:
+            path = os.path.join(root, file)
+            content_list = []
+
+            # JSON Parsing (Past Incidents)
+            if file.endswith(".json") and "incident" in file.lower():
+                with open(path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    for item in data:
+                        text = f"Incident Type: {item.get('type')}. Description: {item.get('visual_description')}. Recommended Action: {item.get('action_taken')}"
+                        content_list.append({"text": text, "metadata": item})
+
+            # TXT Parsing (Safety Rules)
+            elif file.endswith(".txt") and "rule" in file.lower():
+                with open(path, 'r', encoding='utf-8') as f:
+                    rules = [r.strip() for r in f.readlines() if r.strip() and not r.startswith("#")]
+                    for r in rules:
+                        content_list.append({"text": r, "metadata": {"source": "safety_rules", "type": "Regulation"}})
+
+            # CSV parsing (Schedule/Logs)
+            elif file.endswith(".csv"):
+                try:
+                    df = pd.read_csv(path)
+                    for _, row in df.iterrows():
+                        text = " | ".join([f"{col}: {val}" for col, val in row.items()])
+                        content_list.append({"text": text, "metadata": {"source": "csv_logs", "file": file}})
+                except Exception as e:
+                    print(f"   [!] CSV Error {file}: {e}")
+
+            # PDF Parsing
+            elif file.endswith(".pdf"):
+                try:
+                    reader = PdfReader(path)
+                    for i, page in enumerate(reader.pages):
+                        text = page.extract_text()
+                        if text and len(text.strip()) > 20:
+                            content_list.append({"text": text[:1500], "metadata": {"source": "pdf_manual", "page": i}})
+                except Exception as e:
+                    print(f"   [!] PDF Error {file}: {e}")
+
+            # Embed and Upload
+            if content_list:
+                print(f"   [+] Processing {file} ({len(content_list)} entries)")
+                texts = [c["text"] for c in content_list]
+                vectors = list(text_model.embed(texts))
+                
+                for i, v in enumerate(vectors):
+                    knowledge_points.append(PointStruct(
+                        id=global_id,
+                        vector={"text_vector": v.tolist()},
+                        payload={
+                            "content": content_list[i]["text"],
+                            "metadata": content_list[i]["metadata"],
+                            "file_source": file
+                        }
+                    ))
+                    global_id += 1
+                
+                if len(knowledge_points) >= 100:
+                    client.upsert(COLLECTION_KNOWLEDGE, knowledge_points)
+                    knowledge_points = []
+
+    if knowledge_points: client.upsert(COLLECTION_KNOWLEDGE, knowledge_points)
+    print(f"✅ Documents ingestion complete.")
+
+# EXECUTION
+ingest_images()
+ingest_documents()
+print("\n🎉 MULTIMODAL BRAIN READY!")
