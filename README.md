@@ -43,4 +43,4 @@ streamlit run dashboard.py
 - `qdrant_db/`: Local vector database (Git-ignored).
 
 ---
-*Created by the Fix-It Felix Development Team.*
+*Created by the Fix-It-Felix Development Team (nchlh marbou7a).*
