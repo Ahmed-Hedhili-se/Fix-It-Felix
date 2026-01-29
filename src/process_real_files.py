@@ -2,7 +2,7 @@ import pandas as pd
 import json
 import os
 import glob
-BASE_DIR = "datasets/raw_downloads" 
+BASE_DIR = "datasets/raw_downloads"
 OUTPUT_FILE = "datasets/knowledge_base/past_incidents.json"
 def process_form_54(file_path):
     print(f" Processing Mechanical Data: {os.path.basename(file_path)}")
@@ -31,7 +31,7 @@ def process_form_57(file_path):
     try:
         df = pd.read_csv(file_path, low_memory=False)
         if 'TYPVEH' in df.columns:
-            crashes = df[df['TYPVEH'].isin(['A', 'K', 'J'])] 
+            crashes = df[df['TYPVEH'].isin(['A', 'K', 'J'])]
         else:
             crashes = df.head(50)
         cleaned_data = []

@@ -11,3 +11,7 @@ openai
 pandas
 openpyxl
 pypdf
+fastapi
+uvicorn
+python-multipart
+requests

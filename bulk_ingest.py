@@ -9,20 +9,18 @@ from qdrant_client.models import PointStruct, VectorParams, Distance
 from pypdf import PdfReader
 from fastembed import TextEmbedding
 
-# Configuration
 DATASET_PATH = "datasets"
 COLLECTION_IMAGES = "rail_safety_logs"
 COLLECTION_KNOWLEDGE = "expert_knowledge"
 MODEL_IMAGES = "google/siglip2-base-patch16-224"
 MODEL_TEXT = "BAAI/bge-small-en-v1.5"
 
-print("🚀 Starting: Multimodal Ingestion Engine...")
+print(" Starting: Multimodal Ingestion Engine...")
 
 client = QdrantClient(path="qdrant_db")
 
-# 1. SETUP COLLECTIONS
 def setup_collections():
-    # Collection Images
+
     if not client.collection_exists(COLLECTION_IMAGES):
         client.create_collection(
             collection_name=COLLECTION_IMAGES,
@@ -31,9 +29,8 @@ def setup_collections():
                 "offline_lane": VectorParams(size=768, distance=Distance.COSINE)
             }
         )
-        print(f"✅ Collection '{COLLECTION_IMAGES}' ready.")
+        print(f" Collection '{COLLECTION_IMAGES}' ready.")
 
-    # Collection Expert Knowledge (Text)
     if not client.collection_exists(COLLECTION_KNOWLEDGE):
         client.create_collection(
             collection_name=COLLECTION_KNOWLEDGE,
@@ -41,19 +38,17 @@ def setup_collections():
                 "text_vector": VectorParams(size=384, distance=Distance.COSINE)
             }
         )
-        print(f"✅ Collection '{COLLECTION_KNOWLEDGE}' ready.")
+        print(f" Collection '{COLLECTION_KNOWLEDGE}' ready.")
 
 setup_collections()
 
-# 2. LOAD MODELS
-print(f"📦 Loading SigLIP (Images): {MODEL_IMAGES}...")
+print(f" Loading SigLIP (Images): {MODEL_IMAGES}...")
 processor = AutoProcessor.from_pretrained(MODEL_IMAGES)
 model_img = AutoModel.from_pretrained(MODEL_IMAGES)
 
-print(f"📦 Loading FastEmbed (Text)...")
+print(f" Loading FastEmbed (Text)...")
 text_model = TextEmbedding(model_name=MODEL_TEXT)
 
-# 3. PROCESSING FUNCTIONS
 def get_image_embedding(image_path):
     try:
         image = Image.open(image_path).convert("RGB")
@@ -67,7 +62,7 @@ def get_image_embedding(image_path):
         return None
 
 def ingest_images():
-    print(f"🖼️  Scanning for images in {DATASET_PATH}...")
+    print(f"  Scanning for images in {DATASET_PATH}...")
     count = 0
     points = []
     for root, _, files in os.walk(DATASET_PATH):
@@ -76,7 +71,6 @@ def ingest_images():
                 path = os.path.join(root, file)
                 vector = get_image_embedding(path)
                 if vector:
-                    # Logic simple pour determiner le status
                     lower_name = (file + root).lower()
                     status = "OK"
                     action = "PROCEED"
@@ -86,8 +80,8 @@ def ingest_images():
                         status, action = "WARNING", "SLOW_DOWN"
 
                     payload = {
-                        "filename": file, 
-                        "source": "image_dataset", 
+                        "filename": file,
+                        "source": "image_dataset",
                         "path": path,
                         "status": status,
                         "recommended_action": action
@@ -98,10 +92,10 @@ def ingest_images():
                     client.upsert(COLLECTION_IMAGES, points)
                     points = []
     if points: client.upsert(COLLECTION_IMAGES, points)
-    print(f"✅ {count} images ingested.")
+    print(f" {count} images ingested.")
 
 def ingest_documents():
-    print(f"📄 Scanning for documents in {DATASET_PATH}...")
+    print(f" Scanning for documents in {DATASET_PATH}...")
     knowledge_points = []
     global_id = 10000
 
@@ -110,7 +104,6 @@ def ingest_documents():
             path = os.path.join(root, file)
             content_list = []
 
-            # JSON Parsing (Past Incidents)
             if file.endswith(".json") and "incident" in file.lower():
                 with open(path, 'r', encoding='utf-8') as f:
                     data = json.load(f)
@@ -118,14 +111,12 @@ def ingest_documents():
                         text = f"Incident Type: {item.get('type')}. Description: {item.get('visual_description')}. Recommended Action: {item.get('action_taken')}"
                         content_list.append({"text": text, "metadata": item})
 
-            # TXT Parsing (Safety Rules)
             elif file.endswith(".txt") and "rule" in file.lower():
                 with open(path, 'r', encoding='utf-8') as f:
-                    rules = [r.strip() for r in f.readlines() if r.strip() and not r.startswith("#")]
+                    rules = [r.strip() for r in f.readlines() if r.strip() and not r.startswith("
                     for r in rules:
                         content_list.append({"text": r, "metadata": {"source": "safety_rules", "type": "Regulation"}})
 
-            # CSV parsing (Schedule/Logs)
             elif file.endswith(".csv"):
                 try:
                     df = pd.read_csv(path)
@@ -135,7 +126,6 @@ def ingest_documents():
                 except Exception as e:
                     print(f"   [!] CSV Error {file}: {e}")
 
-            # PDF Parsing
             elif file.endswith(".pdf"):
                 try:
                     reader = PdfReader(path)
@@ -146,12 +136,11 @@ def ingest_documents():
                 except Exception as e:
                     print(f"   [!] PDF Error {file}: {e}")
 
-            # Embed and Upload
             if content_list:
                 print(f"   [+] Processing {file} ({len(content_list)} entries)")
                 texts = [c["text"] for c in content_list]
                 vectors = list(text_model.embed(texts))
-                
+
                 for i, v in enumerate(vectors):
                     knowledge_points.append(PointStruct(
                         id=global_id,
@@ -163,15 +152,14 @@ def ingest_documents():
                         }
                     ))
                     global_id += 1
-                
+
                 if len(knowledge_points) >= 100:
                     client.upsert(COLLECTION_KNOWLEDGE, knowledge_points)
                     knowledge_points = []
 
     if knowledge_points: client.upsert(COLLECTION_KNOWLEDGE, knowledge_points)
-    print(f"✅ Documents ingestion complete.")
+    print(f" Documents ingestion complete.")
 
-# EXECUTION
 ingest_images()
 ingest_documents()
-print("\n🎉 MULTIMODAL BRAIN READY!")
+print("\n MULTIMODAL BRAIN READY!")

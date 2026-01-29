@@ -1,0 +1,12 @@
+{
+    "name": "fix-it-felix",
+    "version": "1.0.0",
+    "description": "Fix-It Felix Project",
+    "scripts": {
+        "frontend": "npm run dev --prefix frontend",
+        "backend": "python backend_api.py",
+        "dashboard": "streamlit run dashboard.py",
+        "dev": "npm run frontend",
+        "all": "npx concurrently \"npm run frontend\" \"npm run backend\""
+    }
+}

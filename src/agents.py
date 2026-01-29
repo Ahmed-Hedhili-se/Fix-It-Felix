@@ -1,9 +1,9 @@
-from memory import MemorySystem  
+from memory import MemorySystem
 class RailAgent:
     def __init__(self):
         print(" Initializing Fix-It Felix Agent...")
         self.vision = VisionSystem()
-        self.memory = MemorySystem()  
+        self.memory = MemorySystem()
     def evaluate_risk(self, image_path):
         print(f"\n Analyzing Image: {os.path.basename(image_path)}")
         is_defect, vision_msg = self.vision.analyze_image(image_path)

@@ -26,7 +26,7 @@ class MemorySystem:
             limit=limit,
             search_params=models.SearchParams(
                 quantization=models.QuantizationSearchParams(
-                    rescore=True  
+                    rescore=True
                 )
             )
         )

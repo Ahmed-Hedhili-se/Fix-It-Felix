@@ -5,8 +5,7 @@ class MemorySystem:
         self.client = QdrantClient(path=path)
         self.collection_images = "rail_safety_logs"
         self.collection_knowledge = "expert_knowledge"
-        
-        # Initialize Images Collection
+
         if not self.client.collection_exists(self.collection_images):
             print(f" Creating collection '{self.collection_images}'...")
             self.client.create_collection(
@@ -17,7 +16,6 @@ class MemorySystem:
                 }
             )
 
-        # Initialize Knowledge Collection (Text)
         if not self.client.collection_exists(self.collection_knowledge):
             print(f" Creating collection '{self.collection_knowledge}'...")
             self.client.create_collection(
@@ -52,7 +50,7 @@ class MemorySystem:
         lane = "offline_lane" if mode == 3 else "fast_lane"
         target_dim = 768 if mode == 3 else 1536
         final_query = self._pad_vector(query_vector, target_dim)
-        
+
         results = self.client.query_points(
             collection_name=self.collection_images,
             query=final_query,
@@ -88,20 +86,19 @@ class MemorySystem:
         if results:
             best = results[0]
             p = best.payload
-            
+
             problem_summary = p.get("analysis") or p.get("status") or "rail defect"
-            
-            # Recherche croisée dans les documents
+
             try:
                 docs = self.search_knowledge(problem_summary, limit=2)
                 rules_found = [d.payload.get("content") for d in docs if d.score > 0.5]
             except:
                 rules_found = []
-            
+
             return {
                 "score": best.score,
                 "problem_type": problem_summary,
-                "solution": p.get("solution") or p.get("recommended_action") or "Contacter le service technique.",
+                "solution": p.get("recommended_action") or p.get("solution") or "Inspection préventive et surveillance thermique recommandées.",
                 "rules": rules_found[0] if rules_found else "Protocole standard de sécurité ferroviaire.",
                 "all_rules": rules_found,
                 "file_ref": p.get("filename")
