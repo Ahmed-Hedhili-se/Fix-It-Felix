@@ -113,7 +113,7 @@ def ingest_documents():
 
             elif file.endswith(".txt") and "rule" in file.lower():
                 with open(path, 'r', encoding='utf-8') as f:
-                    rules = [r.strip() for r in f.readlines() if r.strip() and not r.startswith("
+                    rules = [r.strip() for r in f.readlines() if r.strip() and not r.startswith("#")]
                     for r in rules:
                         content_list.append({"text": r, "metadata": {"source": "safety_rules", "type": "Regulation"}})
 
