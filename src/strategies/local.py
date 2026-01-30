@@ -128,7 +128,7 @@ class PrivateStrategy(InferenceStrategy):
 
         ollama_result = get_ollama_analysis(list(set(detections)), user_context)
 
-        optimized_vector = local_vector[:128]
+        optimized_vector = local_vector[:256]
 
         return {
             "mode": "3-PrivateLocal",
