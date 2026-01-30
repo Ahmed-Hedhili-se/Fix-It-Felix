@@ -126,5 +126,5 @@ python backend_api.py
 4. **Result**: The system detects issues (e.g., "Broken Rail") and retrieves specific safety advice from the Qdrant-backed knowledge base.
 
 ---
-*Created by the Fix-It-Felix Development Team. Built for the Rail Safety Global Challenge.*
+
           (marbou7a nchlh)
