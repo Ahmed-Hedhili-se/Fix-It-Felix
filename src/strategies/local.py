@@ -163,8 +163,16 @@ class OfflineStrategy(InferenceStrategy):
             "mode": "4-OfflineBinary",
             "source": "Local (Offline - SigLIP -> YOLO -> Ollama 3.2 1B)",
             "storage_type": "Binary (1s and 0s)",
+<<<<<<< HEAD
                 "detections": list(set(detections)),
                 "analysis": ollama_result,
                 "vector_preview": binary_vector[:10],
                 "vector_full": local_vector
             }
+=======
+            "detections": list(set(detections)),
+            "analysis": ollama_result,
+            "vector_preview": binary_vector[:10],
+            "vector_full": local_vector
+        }
+>>>>>>> 90f292a4fcbb4c41fa864e14861f583dc7e4b422
