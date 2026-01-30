@@ -3,7 +3,6 @@ fastembed>=0.2.0
 torch
 transformers
 pillow
-streamlit
 numpy
 ultralytics
 python-dotenv

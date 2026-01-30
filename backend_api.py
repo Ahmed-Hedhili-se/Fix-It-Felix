@@ -1,4 +1,5 @@
-from fastapi import FastAPI, UploadFile, File, Form
+from fastapi import FastAPI, UploadFile, File, Form, Request
+from typing import Optional
 from fastapi.middleware.cors import CORSMiddleware
 import shutil
 import os
@@ -6,7 +7,7 @@ import uuid
 import json
 from src.memory import MemorySystem
 from src.strategies.cloud import CloudMatryoshkaStrategy
-from src.strategies.local import PrivateStrategy, OfflineStrategy
+from src.strategies.local import PrivateStrategy, OfflineStrategy, get_siglip_embedding
 
 app = FastAPI()
 
@@ -29,40 +30,50 @@ strategies = {
 }
 
 @app.post("/analyze")
-async def analyze_endpoint(
-    image: UploadFile = File(...),
-    mode: str = Form("cloud"),
-    context: str = Form("")
-):
+async def analyze_endpoint(request: Request):
+    form = await request.form()
+    image = form.get("image")
+    mode = form.get("mode", "cloud")
+    context = form.get("context", "")
     incident_id = str(uuid.uuid4())
     print(f"Received Request: {incident_id} | Mode: {mode}")
 
 
-    temp_path = f"temp_{incident_id}.jpg"
-    with open(temp_path, "wb") as buffer:
-        shutil.copyfileobj(image.file, buffer)
+    temp_path = None
+    if image:
+        temp_path = f"temp_{incident_id}.jpg"
+        with open(temp_path, "wb") as buffer:
+            shutil.copyfileobj(image.file, buffer)
 
     try:
+        ref_case = None
+        enhanced_context = context
 
-        engine = strategies.get(mode, strategies["cloud"])
-
-        if mode == "cloud":
-            result = engine.process(temp_path, incident_id, user_context=context)
+        if temp_path:
+            # 1. Generate Visual Embedding First (for RAG)
+            visual_vector = get_siglip_embedding(temp_path)
+            
+            # 2. Retrieve Historical Context (Knowledge Base)
+            ref_case = memory.get_reference_case(visual_vector, mode=3)
+            
+            if ref_case and ref_case['score'] > 0.75:
+                print(f" RAG Injection: Found {ref_case['file_ref']} ({ref_case['score']:.2f})")
+                enhanced_context += f"\n[SYSTEM NOTICE]: Auto-detected similar historical incident: '{ref_case['problem_type']}'. Proven solution: '{ref_case['solution']}'."
         else:
-            result = engine.process(temp_path, incident_id, user_context=context)
+             print(" No image provided. Skipping Visual RAG.")
+
+        # 3. Process Analysis (with injected context)
+        engine = strategies.get(mode, strategies["cloud"])
+        
+        # Strategies need to handle None path
+        result = engine.process(temp_path, incident_id, user_context=enhanced_context) if temp_path or mode == "cloud" or mode == "local" else {"analysis": json.dumps({"analysis": "Image required for this mode.", "severity": "low"})}
 
         try:
             analysis_data = json.loads(result.get("analysis", "{}"))
         except:
             analysis_data = {"analysis": result.get("analysis", "No data")}
 
-        vector_data = result.get("vector_full", result.get("vector_preview", [0.0]*768))
-
-
-        mode_map = {"cloud": 1, "local": 3, "fast": 4}
-        mode_int = mode_map.get(mode, 1)
-
-        ref_case = memory.get_reference_case(vector_data, mode_int)
+        # ref_case is already computed above
 
         response = {
             "incident_id": incident_id,
@@ -86,7 +97,7 @@ async def analyze_endpoint(
     except Exception as e:
         return {"status": "error", "message": str(e)}
     finally:
-        if os.path.exists(temp_path):
+        if temp_path and os.path.exists(temp_path):
             os.remove(temp_path)
 
 if __name__ == "__main__":

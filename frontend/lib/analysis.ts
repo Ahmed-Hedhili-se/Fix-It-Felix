@@ -18,13 +18,15 @@ export interface AnalysisResponse {
 
 export type OperationMode = 'cloud' | 'local' | 'fast';
 
-export async function analyzeImage(image: File, context: string, mode: OperationMode): Promise<AnalysisResponse> {
+export async function analyzeImage(image: File | null, context: string, mode: OperationMode): Promise<AnalysisResponse> {
     const formData = new FormData();
-    formData.append('image', image);
+    if (image) {
+        formData.append('image', image);
+    }
     formData.append('context', context);
     formData.append('mode', mode);
 
-    
+
     const res = await fetch('/api/analyze', {
         method: 'POST',
         body: formData,

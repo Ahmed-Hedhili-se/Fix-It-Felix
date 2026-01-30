@@ -21,10 +21,10 @@ export default function Home() {
   };
 
   const handleAnalyze = async () => {
-    if (!selectedImage) return;
+    if (!selectedImage && !userContext) return;
 
     setIsAnalyzing(true);
-    setResult(null); 
+    setResult(null);
 
     try {
       const data = await analyzeImage(selectedImage, userContext, mode);
@@ -37,7 +37,7 @@ export default function Home() {
     }
   };
 
-  
+
   const onImageSelected = (file: File) => {
     setSelectedImage(file);
     setResult(null);
@@ -46,7 +46,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black text-slate-200">
 
-      {}
+      { }
       <header className="border-b border-white/10 glass sticky top-0 z-50">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -56,7 +56,7 @@ export default function Home() {
             </h1>
           </div>
           <div className="flex gap-4">
-            {}
+            { }
             <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700"></div>
           </div>
         </div>
@@ -64,7 +64,7 @@ export default function Home() {
 
       <div className="container mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
 
-        {}
+        { }
         <div className="lg:col-span-5 space-y-6">
           <div className="space-y-2">
             <h2 className="text-sm uppercase tracking-widest text-slate-500 font-bold">1. Visual Input</h2>
@@ -122,7 +122,7 @@ export default function Home() {
           <Button
             className="w-full h-12 text-base shadow-[0_0_20px_rgba(251,191,36,0.15)] mt-4"
             onClick={handleAnalyze}
-            disabled={!selectedImage || isAnalyzing}
+            disabled={(!selectedImage && !userContext) || isAnalyzing}
           >
             {isAnalyzing ? (
               <>
@@ -135,7 +135,7 @@ export default function Home() {
           </Button>
         </div>
 
-        {}
+        { }
         <div className="lg:col-span-7">
           <h2 className="text-sm uppercase tracking-widest text-slate-500 font-bold mb-6">3. Diagnostic Report</h2>
 
@@ -158,7 +158,7 @@ export default function Home() {
                 animate={{ opacity: 1, y: 0 }}
                 className="space-y-6"
               >
-                {}
+                { }
                 <div className="grid grid-cols-2 gap-4">
                   <Card className="border-l-4 border-l-primary bg-slate-900/80">
                     <CardHeader className="py-4">
@@ -188,7 +188,7 @@ export default function Home() {
                   </Card>
                 </div>
 
-                {}
+                { }
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -212,7 +212,7 @@ export default function Home() {
                   </CardContent>
                 </Card>
 
-                {}
+                { }
                 {result.knowledge_base.found_match && (
                   <Card className="bg-blue-950/20 border-blue-900/30">
                     <CardHeader>

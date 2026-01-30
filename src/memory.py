@@ -24,6 +24,9 @@ class MemorySystem:
                     "text_vector": models.VectorParams(size=384, distance=models.Distance.COSINE)
                 }
             )
+        
+        from fastembed import TextEmbedding
+        self.text_model = TextEmbedding(model_name="BAAI/bge-small-en-v1.5")
 
     def _pad_vector(self, vector, target_dim):
         current = len(vector)
@@ -32,8 +35,8 @@ class MemorySystem:
         return vector[:target_dim]
 
     def save_incident(self, vector, mode, payload):
-        lane = "offline_lane" if mode == 3 else "fast_lane"
-        target_dim = 768 if mode == 3 else 1536
+        lane = "offline_lane" if mode in [3, 4] else "fast_lane"
+        target_dim = 768 if mode in [3, 4] else 1536
         final_vector = self._pad_vector(vector, target_dim)
         self.client.upsert(
             collection_name=self.collection_images,
@@ -47,8 +50,8 @@ class MemorySystem:
         )
 
     def search_similar(self, query_vector, mode, limit=3):
-        lane = "offline_lane" if mode == 3 else "fast_lane"
-        target_dim = 768 if mode == 3 else 1536
+        lane = "offline_lane" if mode in [3, 4] else "fast_lane"
+        target_dim = 768 if mode in [3, 4] else 1536
         final_query = self._pad_vector(query_vector, target_dim)
 
         results = self.client.query_points(
@@ -67,9 +70,7 @@ class MemorySystem:
 
     def search_knowledge(self, query_text, limit=3):
         """Recherche dans les documents techniques et les règlements."""
-        from fastembed import TextEmbedding
-        t_model = TextEmbedding(model_name="BAAI/bge-small-en-v1.5")
-        query_vector = list(t_model.embed([query_text]))[0].tolist()
+        query_vector = list(self.text_model.embed([query_text]))[0].tolist()
 
         results = self.client.query_points(
             collection_name=self.collection_knowledge,

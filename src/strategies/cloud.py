@@ -22,25 +22,30 @@ class InferenceStrategy(ABC):
 class CloudMatryoshkaStrategy(InferenceStrategy):
     def process(self, image_path: str, incident_id: str, user_context: str = ""):
         print(f" Processing {incident_id} in Cloud Tier 1...")
-        with open(image_path, "rb") as f:
-            encoded_image = base64.b64encode(f.read()).decode("utf-8")
+        if image_path:
+            with open(image_path, "rb") as f:
+                encoded_image = base64.b64encode(f.read()).decode("utf-8")
+        else:
+            encoded_image = None
+            print(" Cloud Mode: Text-only request.")
 
         prompt_text = "Analyze this rail segment:"
         if user_context:
             prompt_text += f"\n\nUser Context/Question: {user_context}"
+        
+        user_content = [{"type": "text", "text": prompt_text}]
+        if encoded_image:
+            user_content.append({"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{encoded_image}"}})
 
         response = ai_client.chat.completions.create(
             messages=[
                 {
                     "role": "system",
-                    "content": "You are the Fix-It Felix Expert Engine, specialized in heavy rail maintenance. Analyze rail images. Output technical JSON including 'detected_issues', 'severity', 'analysis' (technical summary), and 'advice' (SPECIFIC technical repair steps for engineers, e.g., 'grinding', 'welding', 'complete rail replacement'). NEVER suggest 'contacting a specialist' or 'technical service'—you ARE the specialist providing advice to the maintenance team. Use dense keywords at the start of the 'analysis' for 256-dim Matryoshka optimization."
+                    "content": "You are the Fix-It Felix Expert Engine, specialized in heavy rail maintenance. Analyze rail assessments. Output technical JSON including 'detected_issues', 'severity', 'analysis' (technical summary), and 'advice' (SPECIFIC technical repair steps for engineers). Use dense keywords at the start of the 'analysis' for 256-dim Matryoshka optimization."
                 },
                 {
                     "role": "user",
-                    "content": [
-                        {"type": "text", "text": prompt_text},
-                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{encoded_image}"}}
-                    ]
+                    "content": user_content
                 }
             ],
             model="gpt-4o",

@@ -118,17 +118,19 @@ class PrivateStrategy(InferenceStrategy):
         if not model:
             return {"error": "YOLO model not loaded"}
 
-        local_vector = get_siglip_embedding(image_path)
-
-        results = model(image_path)
+        local_vector = [0.0] * 768
         detections = []
-        for r in results:
-            for c in r.boxes.cls:
-                detections.append(model.names[int(c)])
 
+        if image_path:
+            local_vector = get_siglip_embedding(image_path)
+            results = model(image_path)
+            for r in results:
+                for c in r.boxes.cls:
+                    detections.append(model.names[int(c)])
+        
         ollama_result = get_ollama_analysis(list(set(detections)), user_context)
 
-        optimized_vector = local_vector[:128]
+        optimized_vector = local_vector[:256]
 
         return {
             "mode": "3-PrivateLocal",
@@ -145,21 +147,24 @@ class OfflineStrategy(InferenceStrategy):
         if not model:
             return {"error": "YOLO model not loaded"}
 
-        local_vector = get_siglip_embedding(image_path)
+        local_vector = [0.0] * 768
+        detections = []
 
-        results = model(image_path)
-        detections = [model.names[int(c)] for r in results for c in r.boxes.cls]
-
-        ollama_result = get_ollama_analysis(list(set(detections)), user_context)
+        if image_path:
+            local_vector = get_siglip_embedding(image_path)
+            results = model(image_path)
+            detections = [model.names[int(c)] for r in results for c in r.boxes.cls]
 
         binary_vector = to_binary(local_vector)
+
+        ollama_result = get_ollama_analysis(list(set(detections)), user_context)
 
         return {
             "mode": "4-OfflineBinary",
             "source": "Local (Offline - SigLIP -> YOLO -> Ollama 3.2 1B)",
             "storage_type": "Binary (1s and 0s)",
-            "detections": list(set(detections)),
-            "analysis": ollama_result,
-            "vector_preview": binary_vector[:10],
-            "vector_full": local_vector
-        }
+                "detections": list(set(detections)),
+                "analysis": ollama_result,
+                "vector_preview": binary_vector[:10],
+                "vector_full": local_vector
+            }
