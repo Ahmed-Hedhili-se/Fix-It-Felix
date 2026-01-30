@@ -1,46 +1,47 @@
-# 🛠️ Fix-It Felix: AI-Powered Rail Safety System
+# 🛠️ Fix-It Felix: AI-Powered Rail Safety System v2.0
 
-Fix-It Felix is an advanced research project focused on automating railway infrastructure inspection. It combines Computer Vision and Multimodal RAG (Retrieval-Augmented Generation) to detect track defects and provide instant regulatory advice.
+Fix-It Felix is an advanced research project designed to automate railway infrastructure inspection. It combines Computer Vision and Multimodal **RAG (Retrieval-Augmented Generation)** to detect track defects and provide instant regulatory advice.
 
 ## 🚀 Key Features
 
-- **Hybrid AI Core**: Supports both Cloud (GPT-4o Vision) and local edge processing (YOLOv11).
-- **Multimodal Memory**: Uses **Qdrant Vector Database** to store visual logs and technical documentation (PDFs, Excel, JSON).
-- **Advanced Retrieval**: When a defect is detected, the system automatically finds the corresponding safety rules and historical solutions.
-- **Matryoshka Embeddings**: Optimized for speed and low-latency search on edge devices.
+-   **High-Precision RAG Flow**: Grounds local AI analysis in historical data, ensuring accurate results even when visual detection is ambiguous (e.g., heavy snow or smoke).
+-   **Flexible Input Analysis**: Supports **Image-only**, **Text-only** (Context Protocol), or **Hybrid** diagnostic requests.
+-   **Hybrid AI Core**: Intelligent routing between Cloud (GPT-4o Vision), Local Privacy (Ollama Llama 3.2), and Fast/Offline (Binary Quantized YOLO/SigLIP) modes.
+-   **Multimodal Memory**: Deep integration with **Qdrant Vector Database** for cross-referencing visual logs with technical manuals (PDF, JSON, CSV).
+-   **Matryoshka Embeddings**: Sliced vector search optimized for speed and low-latency on edge-tier devices.
 
 ## 🏛️ Project Architecture
 
-The project is structured into 4 main layers:
-1. **Frontend**: Streamlit-based (just before submission 3) dashboard for real-time analysis.
-2. **Perception**: Vision engines (YOLO/SigLIP) for defect identification.
-3. **Brain (Qdrant)**: Multi-vector memory system for cross-referencing visual data with technical manuals.
-4. **ETL Pipeline**: Automated ingestion script for processing large datasets of images and documents.
+The system is built on a modern 4-tier stack:
+1.  **Interface Layer (Next.js)**: A premium, industrial React dashboard with real-time analysis streaming and responsive design.
+2.  **API Layer (FastAPI)**: A high-performance Python backend orchestrating model inference and memory retrieval.
+3.  **Perception (YOLOv11 & SigLIP)**: State-of-the-art vision engines for real-time defect identification and visual embedding.
+4.  **Memory (Qdrant)**: Multi-vector database storing 768d (offline) and 1536d (fast) lanes for visual and technical knowledge.
 
-## 🛠️ Installation & Usage
+## 🛠️ Getting Started
 
 ### 1. Requirements
-Ensure you have Python 3.10+ installed. Install dependencies:
+Ensure you have Python 3.10+ and Node.js 18+ installed.
+
+### 2. Backend Setup
 ```bash
 pip install -r requirements.txt
+python bulk_ingest.py  # Build the knowledge base
+python backend_api.py  # Start the API server
 ```
 
-### 2. Database Setup
-To build the knowledge base from your datasets:
+### 3. Frontend Setup
 ```bash
-python bulk_ingest.py
-```
-
-### 3. Launch Dashboard
-```bash
-streamlit run dashboard.py
+cd frontend
+npm install
+npm run dev
 ```
 
 ## 📂 Project Structure
-- `src/`: Core logic and strategy patterns for AI processing.
-- `tools/`: Diagnostic and test scripts.
-- `datasets/`: Storage for training images and technical documents.
-- `qdrant_db/`: Local vector database (Git-ignored).
+-   `src/`: Core logic, AI strategy patterns, and memory management.
+-   `frontend/`: Next.js source code and industrial UI components.
+-   `bulk_ingest.py`: ETL pipeline for multimodal data ingestion.
+-   `datasets/`: Training images and technical knowledge repository.
 
 ---
-*Created by the Fix-It-Felix Development Team (nchlh marbou7a).*
+*Created by the Fix-It-Felix Development Team. Powered by Advanced Agentic AI.*
