@@ -1,14 +1,14 @@
 # 🛠️ Fix-It Felix: AI-Powered Rail Safety System v2.0
 
-Fix-It Felix is an advanced research project designed to automate railway infrastructure inspection. It combines Computer Vision and Multimodal **RAG (Retrieval-Augmented Generation)** to detect track defects and provide instant regulatory advice.
+Fix-It Felix is an advanced research project designed to automate railway infrastructure inspection designed for technical staff . It combines Computer Vision and Multimodal **RAG (Retrieval-Augmented Generation)** to detect track defects and provide instant regulatory advice.
 
 ## 🚀 Key Features
 
--   **High-Precision RAG Flow**: Grounds local AI analysis in historical data, ensuring accurate results even when visual detection is ambiguous (e.g., heavy snow or smoke).
+-   **High-Precision RAG Flow**: Grounds local AI analysis in historical data, ensuring accurate results even when visual detection is ambiguous (e.g., heavy snow or fire).
 -   **Flexible Input Analysis**: Supports **Image-only**, **Text-only** (Context Protocol), or **Hybrid** diagnostic requests.
--   **Hybrid AI Core**: Intelligent routing between Cloud (GPT-4o Vision), Local Privacy (Ollama Llama 3.2), and Fast/Offline (Binary Quantized YOLO/SigLIP) modes.
--   **Multimodal Memory**: Deep integration with **Qdrant Vector Database** for cross-referencing visual logs with technical manuals (PDF, JSON, CSV).
+-   **Multimodal Memory**: Deep integration with **Qdrant Vector Database** for cross-referencing visual logs with technical manuals.
 -   **Matryoshka Embeddings**: Sliced vector search optimized for speed and low-latency on edge-tier devices.
+-   **Hybrid AI Core**: Intelligent routing between Cloud (matryoshka(dim=256)-> GPT-4o Vision), Local Privacy (matryoshka (dim=256) ->SiGLIP -> YOLO11n-> Ollama Llama 3.2 1B), and Fast/Offline (Binary Quantization-> SigLIP -> YOLO -> ollama 3.2 1B) modes.
 
 ## 🏛️ Project Architecture
 
@@ -26,8 +26,8 @@ Ensure you have Python 3.10+ and Node.js 18+ installed.
 ### 2. Backend Setup
 ```bash
 pip install -r requirements.txt
-python bulk_ingest.py  # Build the knowledge base
-python backend_api.py  # Start the API server
+python bulk_ingest.py  
+python backend_api.py  
 ```
 
 ### 3. Frontend Setup
@@ -44,4 +44,4 @@ npm run dev
 -   `datasets/`: Training images and technical knowledge repository.
 
 ---
-*Created by the Fix-It-Felix Development Team. Powered by Advanced Agentic AI.*
+*Created by the Fix-It-Felix Development Team. Powered by Advanced Agentic AI.*             (marbou7a nchlh)
